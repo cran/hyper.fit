@@ -1,0 +1,12 @@
+exportPattern("^[[:alpha:]]+")
+S3method(convert, hyper.plane.param)
+S3method(plot, hyper.fit)
+S3method(summary, hyper.fit)
+import("LaplacesDemon")
+import("magicaxis")
+import("MASS")
+import("rgl")
+
+importFrom("grDevices", "hsv")
+importFrom("graphics", "abline")
+importFrom("stats", "as.formula", "lm", "optim", "runif", "sd")
