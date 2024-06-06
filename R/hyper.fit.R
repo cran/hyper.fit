@@ -47,10 +47,10 @@ hyper.fit=function(X,covarray,vars,parm,parm.coord,parm.beta,parm.scat,parm.erro
   }
   
   if(missing(parm) & missing(parm.coord) & missing(parm.beta) & missing(parm.scat)){
-    makeformula=function(objname='X',dims,vert.axis,env=.GlobalEnv){
+    makeformula=function(objname='X',dims,vert.axis){
       usedims=(1:dims)[-vert.axis]
       text=paste(objname,'[,',vert.axis,']~',paste(paste(objname,'[,',usedims,']',sep=''),collapse ='+'),sep='')
-      return=list(text=text,form=as.formula(text,env=env))
+      return=list(text=text,form=as.formula(text))
     }
     if(any(covarray[vert.axis,vert.axis,]>0)){
       startweights=1/sqrt(covarray[vert.axis,vert.axis,])
@@ -58,7 +58,8 @@ hyper.fit=function(X,covarray,vars,parm,parm.coord,parm.beta,parm.scat,parm.erro
     }else{
       startweights=rep(1,N)
     }
-    startfit=lm(makeformula('X',dims=dims,vert.axis=vert.axis,env=environment())$form,weights=startweights*weights)
+    startfit=lm(makeformula('X',dims=dims,vert.axis=vert.axis)$form,weights=startweights*weights)
+    startfit$coef[is.na(startfit$coef)]=0
     start.alphas=startfit$coef[2:dims]
     start.beta.vert=startfit$coef[1]
     start.scat.vert=sd(startfit$residuals)
@@ -215,5 +216,26 @@ hyper.fit=function(X,covarray,vars,parm,parm.coord,parm.beta,parm.scat,parm.erro
   
   class(out)='hyper.fit'
   if(algo.func=='optim'){class(out$fit)='optim'} 
+  
+  out$func=function(x, dim='all', parm.vert.axis){
+    output=rep(0, dim(x)[1])
+    if(doerrorscale){
+      parm.limit = 3
+    }else{
+      parm.limit = 2
+    }
+    for(i in 1:(length(parm.vert.axis)-parm.limit)){
+      if(dim[1]=='all' | i %in% dim){
+        output = output + x[,i]*parm.vert.axis[i]
+      }
+    }
+    output = output + parm.vert.axis[i+1]
+    return(output)
+  }
+  
+  formals(out$func)$parm.vert.axis = out$parm.vert.axis
+  
+  out$predict.vert.axis = out$func(out$X)
+  
   return=out
 }

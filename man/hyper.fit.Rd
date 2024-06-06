@@ -65,10 +65,10 @@ This specifies whether the intrinsic scatter should be defined orthogonal to the
 If \option{algo.func="optim"} (default) hyper.fit will optimise using the R base \code{\link{optim}} function. If \option{algo.func="LA"} will optimise using the \code{\link{LaplaceApproximation}} function. If \option{algo.func="LD"} will optimise using the \code{\link{LaplacesDemon}} function. For both \option{algo.func="LA"} and \option{algo.func="LD"} the \code{LaplacesDemon} package will be used (see http://www.bayesian-inference.com/software).
 }
   \item{algo.method}{
-Specifies the \option{method} argument of \code{\link{optim}} function when using \option{algo.func="optim"} (if not specified hyper.fit will use "Nelder-Mead" for \code{optim}). Specifies \option{Method} argument of \code{\link{LaplaceApproximation}} function when using \option{algo.func="LA"} (if not specified hyper.fit will use "NM" for \code{LaplaceApproximation}). Specifies \option{Algorithm} argument of \code{\link{LaplacesDemon}} function when using \option{algo.func="LD"} (if not specified hyper.fit will use "CHARM" for \code{LaplacesDemon}). When using \option{algo.func="LD"} the user can also specify further options via the Specs argument below.
+Specifies the \option{method} argument of \code{\link{optim}} function when using \option{algo.func="optim"} (if not specified hyper.fit will use "Nelder-Mead" for \code{optim}). Specifies \option{Method} argument of \code{\link{LaplaceApproximation}} function when using \option{algo.func="LA"} (if not specified hyper.fit will use "NM" for \code{LaplaceApproximation}). Specifies \option{Algorithm} argument of \code{\link{LaplacesDemon}} function when using \option{algo.func="LD"} (if not specified hyper.fit will use "GG" (i.e. Griddy Gibbs) for \code{LaplacesDemon}, but consider also using "CHARM"). When using \option{algo.func="LD"} the user can also specify further options via the Specs argument below.
 }
   \item{Specs}{
-Inputs to pass to the LaplacesDemon function. Default Specs=list(alpha.star = 0.44) option is for the default CHARM algorithm (see algo.method above).
+Inputs to pass to the LaplacesDemon function. Default \option{Specs} is for the default GG (Griddy Gibbs) algorithm (see \option{algo.method} above). If using CHARM, then you probably want to set \option{Specs}=list(alpha.star = 0.44).
 }
   \item{doerrorscale}{
 If FALSE then the provided covariance are treated as it. If TRUE then the likelihood function is also allowed to rescale all errors by a uniform multiplicative value.
@@ -131,6 +131,12 @@ The function returns a multi-component list containing:
 \item{LL}{
   A list containing elements sum (the total log-likelihodd), val (the individual log likelihoods) and sig (the effective sigma offsets). See hyper.like for more information on these outputs.
 }
+\item{func}{
+  A function that can take the input \option{X} and output the target \option{vert.axis}.
+}
+\item{predict.vert.axis}{
+  Vector of \option{vert.axis} predictions.
+}
 }
 \references{
 Robotham, A.S.G., & Obreschkow, D., PASA, in press
@@ -139,7 +145,7 @@ Robotham, A.S.G., & Obreschkow, D., PASA, in press
 Aaron Robotham and Danail Obreschkow
 }
 \seealso{
-  \code{\link{hyper.basic}}, \code{\link{hyper.convert}}, \code{\link{hyper.data}}, \code{\link{hyper.fit}}, \code{\link{hyper.plot}}, \code{\link{hyper.sigcor}}, \code{\link{hyper.summary}}
+  \code{\link{hyper.basic}}, \code{\link{hyper.convert}}, \code{\link{hyper.fit-data}}, \code{\link{hyper.fit}}, \code{\link{hyper.plot}}, \code{\link{hyper.sigcor}}, \code{\link{hyper.summary}}
 }
 \examples{
 #### A very simple 2D example ####
@@ -209,7 +215,7 @@ plot(fitwitherrorandcor)
 
 #Setup the initial data:
 
-\dontrun{
+\donttest{
 
 set.seed(650)
 sampN=200
@@ -275,7 +281,7 @@ plot(fitline, parm.errorscale=fitlineerrscale$parm['errorscale'], trans=0.2, asp
 
 #Setup the initial data:
 
-\dontrun{
+\donttest{
 
 set.seed(650)
 
@@ -353,7 +359,7 @@ plot(fitlinenoexp, trans=0.2, asp=1)
 
 #Setup the initial data:
 
-\dontrun{
+\donttest{
 
 set.seed(650)
 sampN=200
@@ -421,7 +427,7 @@ plot(fitplane)
 
 #Load data:
 
-\dontrun{
+\donttest{
 
 data(hogg)
 
@@ -463,7 +469,7 @@ abline(v=quantile(fithoggtrimMCMC$fit$Posterior2[,3], c(0.95,0.99)), lty=2)
 
 #### Example using 'real' data with intrinsic scatter ####
 
-\dontrun{
+\donttest{
 
 data(intrin)
 
@@ -481,7 +487,7 @@ plot(fitintrincor, trans=0.1, pch='.', asp=1)
 
 #### Example using flaring trumpet data ####
 
-\dontrun{
+\donttest{
 
 data(trumpet)
 fittrumpet=hyper.fit(X=cbind(trumpet$x, trumpet$y), covarray=makecovarray2d(trumpet$x_err,
@@ -494,14 +500,17 @@ plot(fittrumpet, trans=0.1, pch='.', asp=1)
 
 }
 
-\dontrun{
+\donttest{
 
 #To find the likelihood of zero intrinsic scatter we will need to run LaplacesDemon. The
-#following will take a couple of minutes to run:
+#following will take a minute or so to run. Note we change the Specs for the
+#default Griddy Gibbs sampler.
 
 set.seed(650)
-fittrumpetMCMC=hyper.fit(X=cbind(trumpet$x, trumpet$y), covarray=makecovarray2d(trumpet$x_err,
-trumpet$y_err, trumpet$corxy), coord.type='normvec', algo.func='LD', itermax=1e5)
+fittrumpetMCMC = hyper.fit(X=cbind(trumpet$x, trumpet$y), covarray=makecovarray2d(
+  trumpet$x_err, trumpet$y_err, trumpet$corxy), coord.type='normvec', algo.func='LD',
+  itermax=1e4, Specs = list(Grid=seq(-0.001,0.001, len=5), dparm=NULL, CPUs=1,
+  Packages=NULL, Dyn.libs=NULL))
 
 #Assuming the user has specified the same initial seed we should find that the data
 #has exactly zero intrinsic scatter with ~47\% likelihood:
@@ -513,7 +522,7 @@ print(fittrumpetMCMC$zeroscatprob)
 
 set.seed(650)
 fittrumpetMCMCerrscale=hyper.fit(X=cbind(trumpet$x, trumpet$y), covarray=makecovarray2d(
-trumpet$x_err, trumpet$y_err, trumpet$corxy), itermax=1e5, coord.type='normvec', algo.func='LD',
+trumpet$x_err, trumpet$y_err, trumpet$corxy), itermax=1e4, coord.type='normvec', algo.func='LD',
 algo.method='CHARM', Specs=list(alpha.star = 0.44), doerrorscale=TRUE)
 
 #Assuming the user has specified the same initial seed we should find that the data
@@ -525,7 +534,7 @@ print(fittrumpetMCMCerrscale$zeroscatprob)
 
 #### Example using 6dFGS Fundamental Plane data ####
 
-\dontrun{
+\donttest{
 
 data(FP6dFGS)
 
@@ -541,7 +550,7 @@ plot(fitFP6dFGS, doellipse=FALSE, alpha=0.5)
 
 #Next we add the censoring weights provided by C. Magoulas:
 
-\dontrun{
+\donttest{
 
 fitFP6dFGSw=hyper.fit(FP6dFGS[,c('logIe_J', 'logsigma', 'logRe_J')],
 vars=FP6dFGS[,c('logIe_J_err', 'logsigma_err', 'logRe_J_err')]^2, weights=FP6dFGS[,'weights'],
@@ -559,7 +568,7 @@ in.coord.type='alpha'))
 
 #### Example using GAMA mass-size relation data ####
 
-\dontrun{
+\donttest{
 
 data(GAMAsmVsize)
 fitGAMAsmVsize=hyper.fit(GAMAsmVsize[,c('logmstar', 'rekpc')],
@@ -591,7 +600,7 @@ plot(fitGAMAsmVsizelogrenoerr, doellipse=FALSE, unlog='xy')
 
 ### Example using Tully-Fisher relation data ###
 
-\dontrun{
+\donttest{
 
 data(TFR)
 TFRfit=hyper.fit(X=TFR[,c('logv','M_K')],vars=TFR[,c('logv_err','M_K_err')]^2)
@@ -601,7 +610,7 @@ plot(TFRfit, xlim=c(1.7,2.5), ylim=c(-19,-26))
 
 ### Mase-Angular Momentum-Bulge/Total ###
 
-\dontrun{
+\donttest{
 
 data(MJB)
 MJBfit=hyper.fit(X=MJB[,c('logM','logj','B.T')], covarray=makecovarray3d(MJB$logM_err,
